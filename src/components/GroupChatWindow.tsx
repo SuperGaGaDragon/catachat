@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { PaperPlaneIcon, PersonIcon } from '@radix-ui/react-icons';
+import { PaperPlaneIcon, PersonIcon, GearIcon } from '@radix-ui/react-icons';
 import type { Group, GroupMessage, CurrentUser } from '../types';
 import './GroupChatWindow.css';
 
@@ -9,6 +9,7 @@ interface GroupChatWindowProps {
   messages: GroupMessage[];
   loading: boolean;
   onSend: (content: string) => Promise<void>;
+  onOpenSettings?: () => void;
 }
 
 function Avatar({ name, size = 36 }: { name: string; size?: number }) {
@@ -32,6 +33,7 @@ export default function GroupChatWindow({
   messages,
   loading,
   onSend,
+  onOpenSettings,
 }: GroupChatWindowProps) {
   const [draft, setDraft]     = useState('');
   const [sending, setSending] = useState(false);
@@ -75,16 +77,25 @@ export default function GroupChatWindow({
     <div className="gcw-root">
       {/* Header */}
       <div className="gcw-header">
-        <div className="gcw-header-icon">
-          <PersonIcon width={18} height={18} />
+        <div className="gcw-header-left">
+          <div className="gcw-header-icon">
+            <PersonIcon width={18} height={18} />
+          </div>
+          <div className="gcw-header-info">
+            <span className="gcw-header-name">{group?.name ?? '…'}</span>
+            <span className="gcw-header-sub">
+              {memberCount} member{memberCount !== 1 ? 's' : ''}
+              {myRole !== 'member' && ` · ${myRole}`}
+            </span>
+          </div>
         </div>
-        <div className="gcw-header-info">
-          <span className="gcw-header-name">{group?.name ?? '…'}</span>
-          <span className="gcw-header-sub">
-            {memberCount} member{memberCount !== 1 ? 's' : ''}
-            {myRole !== 'member' && ` · ${myRole}`}
-          </span>
-        </div>
+        <button
+          className="gcw-icon-btn"
+          onClick={onOpenSettings}
+          title="Group settings"
+        >
+          <GearIcon width={16} height={16} />
+        </button>
       </div>
 
       {/* Messages */}

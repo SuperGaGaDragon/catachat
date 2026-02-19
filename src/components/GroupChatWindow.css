@@ -11,12 +11,39 @@
 .gcw-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
+  justify-content: space-between;
+  padding: 14px 16px 14px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   z-index: 1;
+}
+
+.gcw-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.gcw-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.gcw-icon-btn:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
 }
 
 .gcw-header-icon {

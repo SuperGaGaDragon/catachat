@@ -1,0 +1,470 @@
+/* ── Layout shell ─────────────────────────────────────────────────────────────── */
+
+/* Wraps GroupChatWindow + GroupSettingsPanel side-by-side inside the Outlet */
+.group-page-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ── Panel ────────────────────────────────────────────────────────────────────── */
+
+.gsp-panel {
+  width: 288px;
+  min-width: 288px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border-light);
+  overflow: hidden;
+  animation: gsp-slidein 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gsp-slidein {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────────── */
+
+.gsp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px 14px;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.gsp-header-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.1px;
+}
+
+/* ── Group identity ───────────────────────────────────────────────────────────── */
+
+.gsp-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px 18px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.gsp-group-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 2px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+/* Name (view mode) */
+.gsp-name-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 8px;
+  cursor: default;
+  transition: background 0.12s;
+}
+
+.gsp-name-row--editable {
+  cursor: pointer;
+}
+
+.gsp-name-row--editable:hover {
+  background: var(--sidebar-hover);
+}
+
+.gsp-name-row--editable:hover .gsp-edit-hint {
+  opacity: 1;
+}
+
+.gsp-group-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+
+.gsp-edit-hint {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* Name (edit mode) */
+.gsp-name-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 210px;
+}
+
+.gsp-name-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.gsp-name-input {
+  flex: 1;
+  border: 1.5px solid #6366f1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  text-align: center;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.gsp-member-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.gsp-inline-error {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+/* ── Separator ────────────────────────────────────────────────────────────────── */
+
+.gsp-sep {
+  height: 1px;
+  background: var(--border-light);
+  margin: 0 14px;
+  flex-shrink: 0;
+}
+
+/* ── Section label ────────────────────────────────────────────────────────────── */
+
+.gsp-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 14px 16px 6px;
+  flex-shrink: 0;
+}
+
+/* ── Add member ───────────────────────────────────────────────────────────────── */
+
+.gsp-add-zone {
+  padding: 0 12px 8px;
+  flex-shrink: 0;
+}
+
+.gsp-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.gsp-add-btn:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.gsp-add-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gsp-add-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gsp-add-input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid #6366f1;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.gsp-add-confirm-btn {
+  padding: 7px 13px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.gsp-add-confirm-btn:hover:not(:disabled) { background: #4f46e5; }
+.gsp-add-confirm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Member list ──────────────────────────────────────────────────────────────── */
+
+.gsp-member-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+
+.gsp-member-list::-webkit-scrollbar       { width: 3px; }
+.gsp-member-list::-webkit-scrollbar-track { background: transparent; }
+.gsp-member-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.gsp-member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  transition: background 0.1s;
+}
+
+.gsp-member-row:hover { background: var(--sidebar-hover); }
+
+.gsp-avatar {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.gsp-member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gsp-member-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gsp-self-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--sidebar-hover);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* Role badges */
+.gsp-role-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gsp-role-badge--owner  { background: #fef3c7; color: #b45309; }
+.gsp-role-badge--admin  { background: rgba(99, 102, 241, 0.1); color: #4f46e5; }
+.gsp-role-badge--member { background: #f1f5f9; color: #94a3b8; }
+
+/* Dots menu */
+.gsp-menu-wrap { position: relative; flex-shrink: 0; }
+
+.gsp-icon-btn--dots {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.gsp-member-row:hover .gsp-icon-btn--dots { opacity: 1; }
+
+.gsp-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  overflow: hidden;
+  min-width: 148px;
+}
+
+.gsp-menu-item {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.gsp-menu-item:hover             { background: var(--sidebar-hover); }
+.gsp-menu-item--danger           { color: var(--danger); }
+.gsp-menu-item--danger:hover     { background: #fef2f2; }
+
+/* ── Icon button (shared base) ────────────────────────────────────────────────── */
+
+.gsp-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.gsp-icon-btn:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+.gsp-icon-btn--confirm {
+  background: #6366f1 !important;
+  color: white !important;
+  border-radius: 7px;
+}
+
+.gsp-icon-btn--confirm:hover:not(:disabled) { background: #4f46e5 !important; }
+.gsp-icon-btn--confirm:disabled             { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Danger zone ──────────────────────────────────────────────────────────────── */
+
+.gsp-danger-zone {
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.gsp-danger-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.gsp-danger-row-btn:hover {
+  background: #fee2e2;
+  border-color: var(--danger);
+}
+
+/* Confirmation block */
+.gsp-confirm-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gsp-confirm-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 2px 2px;
+}
+
+.gsp-confirm-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.gsp-btn-cancel {
+  flex: 1;
+  padding: 8px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.gsp-btn-cancel:hover {
+  background: var(--sidebar-hover);
+  border-color: var(--text-muted);
+}
+
+.gsp-btn-danger-confirm {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 9px;
+  background: var(--danger);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.gsp-btn-danger-confirm:hover { background: #b91c1c; }

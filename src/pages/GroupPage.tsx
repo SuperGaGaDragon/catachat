@@ -3,7 +3,9 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { api } from '../api';
 import type { Group, GroupMessage } from '../types';
 import GroupChatWindow from '../components/GroupChatWindow';
+import GroupSettingsPanel from '../components/GroupSettingsPanel';
 import type { ChatLayoutContext } from './ChatLayout';
+import '../components/GroupSettingsPanel.css';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -13,11 +15,11 @@ export default function GroupPage() {
 
   const { currentUser } = useOutletContext<ChatLayoutContext>();
 
-  const [group, setGroup]     = useState<Group | null>(null);
-  const [messages, setMessages] = useState<GroupMessage[]>([]);
+  const [group, setGroup]             = useState<Group | null>(null);
+  const [messages, setMessages]       = useState<GroupMessage[]>([]);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
+  const [panelOpen, setPanelOpen]     = useState(false);
 
-  // Refs for polling (avoids stale closure)
   const groupIdRef  = useRef<string | null>(null);
   const messagesRef = useRef<GroupMessage[]>([]);
   groupIdRef.current  = groupId ?? null;
@@ -70,12 +72,24 @@ export default function GroupPage() {
   }
 
   return (
-    <GroupChatWindow
-      currentUser={currentUser}
-      group={group}
-      messages={messages}
-      loading={loadingMsgs}
-      onSend={handleSend}
-    />
+    <div className="group-page-layout">
+      <GroupChatWindow
+        currentUser={currentUser}
+        group={group}
+        messages={messages}
+        loading={loadingMsgs}
+        onSend={handleSend}
+        onOpenSettings={() => setPanelOpen(true)}
+      />
+      {panelOpen && group && (
+        <GroupSettingsPanel
+          group={group}
+          currentUser={currentUser}
+          onClose={() => setPanelOpen(false)}
+          onGroupUpdated={setGroup}
+          onLeft={() => navigate('/', { replace: true })}
+        />
+      )}
+    </div>
   );
 }

@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, clearToken } from '../api';
 import type { Conversation, Message, CurrentUser, UserLookup } from '../types';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 import './ChatPage.css';
+
+const POLL_INTERVAL_MS = 3000;   // new messages in active conv
+const CONV_REFRESH_MS  = 8000;   // sidebar conversation list
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -14,6 +17,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
+
+  // Refs so polling callbacks always see latest values without re-creating timers
+  const activeConvIdRef = useRef<string | null>(null);
+  const messagesRef = useRef<Message[]>([]);
+  activeConvIdRef.current = activeConvId;
+  messagesRef.current = messages;
 
   // Fetch current user profile
   useEffect(() => {
@@ -37,11 +46,14 @@ export default function ChatPage() {
     }
   }, []);
 
+  // Initial load + periodic refresh of conversation list
   useEffect(() => {
     refreshConversations();
+    const id = setInterval(refreshConversations, CONV_REFRESH_MS);
+    return () => clearInterval(id);
   }, [refreshConversations]);
 
-  // Fetch messages for active conversation
+  // Initial load of messages when active conv changes (with loading spinner)
   useEffect(() => {
     if (!activeConvId) {
       setMessages([]);
@@ -54,6 +66,30 @@ export default function ChatPage() {
       .finally(() => setLoadingMsgs(false));
   }, [activeConvId]);
 
+  // Silent polling: fetch latest messages and append only NEW ones (no flicker)
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const convId = activeConvIdRef.current;
+      if (!convId) return;
+      try {
+        const latest = await api.get<Message[]>(
+          `/api/catchat/conversations/${convId}/messages?limit=50`
+        );
+        const reversed = [...latest].reverse();
+        const existing = messagesRef.current;
+        // Find messages not already in state
+        const existingIds = new Set(existing.map(m => m.id));
+        const incoming = reversed.filter(m => !existingIds.has(m.id));
+        if (incoming.length > 0) {
+          setMessages(prev => [...prev, ...incoming]);
+        }
+      } catch {
+        // silent
+      }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []); // intentionally empty — uses refs
+
   async function handleSend(content: string) {
     if (!activeConvId || !content.trim()) return;
     const msg = await api.post<Message>(
@@ -61,7 +97,6 @@ export default function ChatPage() {
       { content: content.trim() }
     );
     setMessages(prev => [...prev, msg]);
-    // bump conversation to top
     setConversations(prev => {
       const updated = prev.map(c =>
         c.id === activeConvId ? { ...c, last_message_at: msg.created_at } : c
@@ -76,7 +111,6 @@ export default function ChatPage() {
 
   async function handleStartConversation(otherUserId: string, otherUsername: string) {
     const conv = await api.post<Conversation>('/api/catchat/conversations', { user_id: otherUserId });
-    // attach username for display
     const enriched: Conversation = { ...conv, other_username: otherUsername };
     setConversations(prev => {
       const exists = prev.find(c => c.id === enriched.id);

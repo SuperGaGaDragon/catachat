@@ -258,10 +258,42 @@
   color: var(--danger);
 }
 
-/* Header action buttons row */
-.sidebar-header-actions {
+/* + button with dropdown */
+.sidebar-plus-wrap {
+  position: relative;
+}
+
+.plus-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 110px;
+}
+
+.plus-menu-item {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.plus-menu-item:hover {
+  background: var(--sidebar-hover);
 }
 
 /* Group avatar */

@@ -70,9 +70,23 @@ export default function Sidebar({
   onLogout,
 }: SidebarProps) {
   const navigate = useNavigate();
-  const [search, setSearch]           = useState('');
+  const [search, setSearch]                   = useState('');
   const [chatDialogOpen, setChatDialogOpen]   = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [plusMenuOpen, setPlusMenuOpen]       = useState(false);
+  const plusBtnRef                            = useRef<HTMLDivElement>(null);
+
+  // Close + menu when clicking outside
+  useEffect(() => {
+    if (!plusMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (plusBtnRef.current && !plusBtnRef.current.contains(e.target as Node)) {
+        setPlusMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [plusMenuOpen]);
 
   // Groups: fetched internally by Sidebar so both ChatPage and GroupPage share them
   const [groups, setGroups]           = useState<Group[]>([]);
@@ -153,13 +167,26 @@ export default function Sidebar({
             <span className="brand-chat">chat</span>
           </span>
         </div>
-        <div className="sidebar-header-actions">
-          <button className="icon-btn" title="New conversation" onClick={() => setChatDialogOpen(true)}>
+        <div className="sidebar-plus-wrap" ref={plusBtnRef}>
+          <button
+            className="icon-btn"
+            title="New chat"
+            onClick={() => setPlusMenuOpen(o => !o)}
+          >
             <PlusIcon width={18} height={18} />
           </button>
-          <button className="icon-btn" title="New group" onClick={() => setGroupDialogOpen(true)}>
-            <PersonIcon width={16} height={16} />
-          </button>
+          {plusMenuOpen && (
+            <div className="plus-menu">
+              <button className="plus-menu-item" onClick={() => { setPlusMenuOpen(false); setChatDialogOpen(true); }}>
+                <ChatBubbleIcon width={14} height={14} />
+                私信
+              </button>
+              <button className="plus-menu-item" onClick={() => { setPlusMenuOpen(false); setGroupDialogOpen(true); }}>
+                <PersonIcon width={14} height={14} />
+                群聊
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

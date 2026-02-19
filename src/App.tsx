@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { getToken, saveToken } from './api';
 import LoginPage from './pages/LoginPage';
+import ChatLayout from './pages/ChatLayout';
 import ChatPage from './pages/ChatPage';
 import GroupPage from './pages/GroupPage';
 
@@ -27,10 +28,15 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/broadcast" element={<RequireAuth><ChatPage /></RequireAuth>} />
-        <Route path="/chat/:peer" element={<RequireAuth><ChatPage /></RequireAuth>} />
-        <Route path="/group/:groupId" element={<RequireAuth><GroupPage /></RequireAuth>} />
-        <Route path="/" element={<RequireAuth><ChatPage /></RequireAuth>} />
+
+        {/* Persistent shell — Sidebar lives here and never remounts on navigation */}
+        <Route element={<RequireAuth><ChatLayout /></RequireAuth>}>
+          <Route path="/"              element={<ChatPage />} />
+          <Route path="/broadcast"     element={<ChatPage />} />
+          <Route path="/chat/:peer"    element={<ChatPage />} />
+          <Route path="/group/:groupId" element={<GroupPage />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

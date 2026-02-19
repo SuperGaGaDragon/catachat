@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   PlusIcon, MagnifyingGlassIcon, ExitIcon,
   ChatBubbleIcon, SpeakerLoudIcon, PersonIcon,
@@ -12,9 +12,7 @@ import './Sidebar.css';
 
 interface SidebarProps {
   currentUser: CurrentUser | null;
-  conversations?: Conversation[];         // provided by ChatPage
-  activePeer: string | null;              // username or '__broadcast__'
-  activeGroupId?: string | null;          // provided by GroupPage
+  conversations?: Conversation[];
   loading?: boolean;
   onUserSearch?: (username: string) => Promise<UserLookup | null>;
   onLogout: () => void;
@@ -63,13 +61,20 @@ type SidebarItem =
 export default function Sidebar({
   currentUser,
   conversations = [],
-  activePeer,
-  activeGroupId = null,
   loading = false,
   onUserSearch,
   onLogout,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive active state from URL so Sidebar never needs props for this
+  const pathChatMatch = location.pathname.match(/^\/chat\/(.+)$/);
+  const pathGroupMatch = location.pathname.match(/^\/group\/(.+)$/);
+  const activePeer    = location.pathname === '/broadcast'
+    ? '__broadcast__'
+    : pathChatMatch ? decodeURIComponent(pathChatMatch[1]) : null;
+  const activeGroupId = pathGroupMatch ? pathGroupMatch[1] : null;
   const [search, setSearch]                   = useState('');
   const [chatDialogOpen, setChatDialogOpen]   = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);

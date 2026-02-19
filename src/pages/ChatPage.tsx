@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { api, clearToken } from '../api';
-import type { Conversation, Message, CurrentUser, UserLookup, Broadcast } from '../types';
-import Sidebar from '../components/Sidebar';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation, useOutletContext } from 'react-router-dom';
+import { api } from '../api';
+import type { Conversation, Message, UserLookup, Broadcast } from '../types';
 import ChatWindow from '../components/ChatWindow';
+import type { ChatLayoutContext } from './ChatLayout';
 import './ChatPage.css';
 
 const POLL_INTERVAL_MS = 3000;
-const CONV_REFRESH_MS  = 8000;
 
 function broadcastToMessage(b: Broadcast): Message {
   return {
@@ -26,12 +25,12 @@ export default function ChatPage() {
   const { peer }  = useParams<{ peer: string }>();
   const isBroadcast = location.pathname === '/broadcast';
 
-  const [currentUser, setCurrentUser]     = useState<CurrentUser | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConvId, setActiveConvId]   = useState<string | null>(null);
-  const [messages, setMessages]           = useState<Message[]>([]);
-  const [loadingConvs, setLoadingConvs]   = useState(true);
-  const [loadingMsgs, setLoadingMsgs]     = useState(false);
+  const { currentUser, conversations, setConversations } =
+    useOutletContext<ChatLayoutContext>();
+
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [messages, setMessages]         = useState<Message[]>([]);
+  const [loadingMsgs, setLoadingMsgs]   = useState(false);
 
   const activeConvIdRef = useRef<string | null>(null);
   const isBroadcastRef  = useRef(false);
@@ -39,28 +38,6 @@ export default function ChatPage() {
   activeConvIdRef.current = activeConvId;
   isBroadcastRef.current  = isBroadcast;
   messagesRef.current     = messages;
-
-  // ── Auth ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    api.get<CurrentUser>('/user/profile')
-      .then(setCurrentUser)
-      .catch(() => { clearToken(); navigate('/login', { replace: true }); });
-  }, [navigate]);
-
-  // ── Conversations list (sidebar) ──────────────────────────────────────────
-  const refreshConversations = useCallback(async () => {
-    try {
-      const convs = await api.get<Conversation[]>('/api/catchat/conversations');
-      setConversations(convs);
-    } catch { /* silent */ }
-    finally { setLoadingConvs(false); }
-  }, []);
-
-  useEffect(() => {
-    refreshConversations();
-    const id = setInterval(refreshConversations, CONV_REFRESH_MS);
-    return () => clearInterval(id);
-  }, [refreshConversations]);
 
   // ── Broadcast mode: load + poll ────────────────────────────────────────────
   useEffect(() => {
@@ -97,7 +74,7 @@ export default function ChatPage() {
     }
     open().catch(() => navigate('/', { replace: true }));
     return () => { cancelled = true; };
-  }, [peer, isBroadcast, navigate]);
+  }, [peer, isBroadcast, navigate, setConversations]);
 
   // ── Messages load when active conv changes ────────────────────────────────
   useEffect(() => {
@@ -158,38 +135,19 @@ export default function ChatPage() {
     });
   }
 
-  async function handleUserSearch(username: string): Promise<UserLookup | null> {
-    try { return await api.get<UserLookup>(`/user/by-username/${encodeURIComponent(username)}`); }
-    catch { return null; }
-  }
-
-  function handleLogout() { clearToken(); navigate('/login', { replace: true }); }
-
   const isAdmin    = currentUser?.role === 'admin';
   const activeConv = conversations.find(c => c.id === activeConvId) ?? null;
-  // sidebar uses '__broadcast__' as sentinel for highlight when on /broadcast
-  const activePeer = isBroadcast ? '__broadcast__' : (peer ?? null);
 
   return (
-    <div className="chat-root">
-      <Sidebar
-        currentUser={currentUser}
-        conversations={conversations}
-        activePeer={activePeer}
-        loading={loadingConvs}
-        onUserSearch={handleUserSearch}
-        onLogout={handleLogout}
-      />
-      <ChatWindow
-        currentUser={currentUser}
-        conversation={isBroadcast ? null : activeConv}
-        messages={messages}
-        loading={loadingMsgs}
-        onSend={handleSend}
-        title={isBroadcast ? 'Broadcast' : undefined}
-        isBroadcast={isBroadcast}
-        canSend={isBroadcast ? isAdmin : true}
-      />
-    </div>
+    <ChatWindow
+      currentUser={currentUser}
+      conversation={isBroadcast ? null : activeConv}
+      messages={messages}
+      loading={loadingMsgs}
+      onSend={handleSend}
+      title={isBroadcast ? 'Broadcast' : undefined}
+      isBroadcast={isBroadcast}
+      canSend={isBroadcast ? isAdmin : true}
+    />
   );
 }

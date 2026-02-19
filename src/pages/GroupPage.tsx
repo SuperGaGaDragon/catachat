@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { api, clearToken } from '../api';
-import type { Group, GroupMessage, CurrentUser, Conversation } from '../types';
-import Sidebar from '../components/Sidebar';
+import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
+import { api } from '../api';
+import type { Group, GroupMessage } from '../types';
 import GroupChatWindow from '../components/GroupChatWindow';
+import type { ChatLayoutContext } from './ChatLayout';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -11,34 +11,17 @@ export default function GroupPage() {
   const navigate = useNavigate();
   const { groupId } = useParams<{ groupId: string }>();
 
-  const [currentUser, setCurrentUser]     = useState<CurrentUser | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [group, setGroup]                 = useState<Group | null>(null);
-  const [messages, setMessages]           = useState<GroupMessage[]>([]);
-  const [loadingMsgs, setLoadingMsgs]     = useState(true);
+  const { currentUser } = useOutletContext<ChatLayoutContext>();
+
+  const [group, setGroup]     = useState<Group | null>(null);
+  const [messages, setMessages] = useState<GroupMessage[]>([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(true);
 
   // Refs for polling (avoids stale closure)
   const groupIdRef  = useRef<string | null>(null);
   const messagesRef = useRef<GroupMessage[]>([]);
   groupIdRef.current  = groupId ?? null;
   messagesRef.current = messages;
-
-  // ── Auth ───────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    api.get<CurrentUser>('/user/profile')
-      .then(setCurrentUser)
-      .catch(() => { clearToken(); navigate('/login', { replace: true }); });
-  }, [navigate]);
-
-  // ── Conversations (for sidebar) ────────────────────────────────────────────
-  useEffect(() => {
-    const fetch = () =>
-      api.get<Conversation[]>('/api/catchat/conversations')
-        .then(setConversations).catch(() => {});
-    fetch();
-    const id = setInterval(fetch, 8000);
-    return () => clearInterval(id);
-  }, []);
 
   // ── Load group info ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -86,24 +69,13 @@ export default function GroupPage() {
     setMessages(prev => [...prev, msg]);
   }
 
-  function handleLogout() { clearToken(); navigate('/login', { replace: true }); }
-
   return (
-    <div className="chat-root">
-      <Sidebar
-        currentUser={currentUser}
-        conversations={conversations}
-        activePeer={null}
-        activeGroupId={groupId ?? null}
-        onLogout={handleLogout}
-      />
-      <GroupChatWindow
-        currentUser={currentUser}
-        group={group}
-        messages={messages}
-        loading={loadingMsgs}
-        onSend={handleSend}
-      />
-    </div>
+    <GroupChatWindow
+      currentUser={currentUser}
+      group={group}
+      messages={messages}
+      loading={loadingMsgs}
+      onSend={handleSend}
+    />
   );
 }

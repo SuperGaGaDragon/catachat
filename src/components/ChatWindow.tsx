@@ -66,7 +66,7 @@ export default function ChatWindow({
       await onSend(content);
     } finally {
       setSending(false);
-      textareaRef.current?.focus();
+      setTimeout(() => textareaRef.current?.focus(), 0);
     }
   }
 

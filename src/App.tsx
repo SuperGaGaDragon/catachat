@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { getToken, saveToken } from './api';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
+import GroupPage from './pages/GroupPage';
 
 // If catachess passes ?token=<jwt> in the URL, persist it immediately
 // so the user lands directly in the chat without re-logging in.
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/broadcast" element={<RequireAuth><ChatPage /></RequireAuth>} />
         <Route path="/chat/:peer" element={<RequireAuth><ChatPage /></RequireAuth>} />
+        <Route path="/group/:groupId" element={<RequireAuth><GroupPage /></RequireAuth>} />
         <Route path="/" element={<RequireAuth><ChatPage /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -34,3 +34,30 @@ export interface Broadcast {
   content: string;
   created_at: string;
 }
+
+// ── Group chat ────────────────────────────────────────────────────────────────
+
+export interface GroupMember {
+  user_id: string;
+  username: string;
+  role: 'owner' | 'admin' | 'member';
+  joined_at: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;           // stored name or auto-generated from members
+  created_by: string;
+  created_at: string;
+  last_message_at: string;
+  members: GroupMember[];
+}
+
+export interface GroupMessage {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  sender_name: string;
+  content: string;
+  created_at: string;
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, MagnifyingGlassIcon, ExitIcon, ChatBubbleIcon } from '@radix-ui/react-icons';
+import { PlusIcon, MagnifyingGlassIcon, ExitIcon, ChatBubbleIcon, SpeakerLoudIcon } from '@radix-ui/react-icons';
 import type { Conversation, CurrentUser, UserLookup } from '../types';
 import NewChatDialog from './NewChatDialog';
 import './Sidebar.css';
@@ -89,6 +89,20 @@ export default function Sidebar({
           onChange={e => setSearch(e.target.value)}
         />
       </div>
+
+      {/* Pinned: Broadcast */}
+      <button
+        className={`conv-item conv-item--broadcast ${activePeer === '__broadcast__' ? 'conv-item--active' : ''}`}
+        onClick={() => navigate('/broadcast')}
+      >
+        <div className="avatar avatar--broadcast" style={{ width: 42, height: 42 }}>
+          <SpeakerLoudIcon width={18} height={18} />
+        </div>
+        <div className="conv-info">
+          <span className="conv-name">Broadcast</span>
+          <span className="conv-time conv-time--pinned">Pinned</span>
+        </div>
+      </button>
 
       {/* Conversation list */}
       <div className="sidebar-list">

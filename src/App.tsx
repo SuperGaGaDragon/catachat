@@ -26,6 +26,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/broadcast" element={<RequireAuth><ChatPage /></RequireAuth>} />
         <Route path="/chat/:peer" element={<RequireAuth><ChatPage /></RequireAuth>} />
         <Route path="/" element={<RequireAuth><ChatPage /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />

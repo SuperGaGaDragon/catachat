@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { PaperPlaneIcon, ChatBubbleIcon } from '@radix-ui/react-icons';
+import { PaperPlaneIcon, ChatBubbleIcon, SpeakerLoudIcon } from '@radix-ui/react-icons';
 import type { Conversation, Message, CurrentUser } from '../types';
 import './ChatWindow.css';
 
@@ -9,6 +9,10 @@ interface ChatWindowProps {
   messages: Message[];
   loading: boolean;
   onSend: (content: string) => Promise<void>;
+  // broadcast mode overrides
+  title?: string;          // replaces conversation name in header
+  isBroadcast?: boolean;   // shows megaphone icon instead of avatar
+  canSend?: boolean;       // false = hide input bar (non-admin in broadcast)
 }
 
 function Avatar({ name, size = 36 }: { name: string; size?: number }) {
@@ -22,11 +26,28 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   );
 }
 
+function BroadcastAvatar({ size = 38 }: { size?: number }) {
+  return (
+    <div className="cw-avatar cw-avatar--broadcast" style={{ width: size, height: size, fontSize: size * 0.4 }}>
+      <SpeakerLoudIcon width={size * 0.45} height={size * 0.45} />
+    </div>
+  );
+}
+
 function formatMsgTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ChatWindow({ currentUser, conversation, messages, loading, onSend }: ChatWindowProps) {
+export default function ChatWindow({
+  currentUser,
+  conversation,
+  messages,
+  loading,
+  onSend,
+  title,
+  isBroadcast = false,
+  canSend = true,
+}: ChatWindowProps) {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -56,17 +77,16 @@ export default function ChatWindow({ currentUser, conversation, messages, loadin
     }
   }
 
-  // Auto-resize textarea
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setDraft(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   }
 
-  const otherName = conversation?.other_username
+  const displayName = title ?? conversation?.other_username
     ?? (conversation ? conversation.other_user_id.slice(0, 8) + '…' : '');
 
-  if (!conversation) {
+  if (!isBroadcast && !conversation) {
     return (
       <div className="cw-root cw-empty">
         <div className="cw-empty-content">
@@ -82,9 +102,17 @@ export default function ChatWindow({ currentUser, conversation, messages, loadin
     <div className="cw-root">
       {/* Header */}
       <div className="cw-header">
-        <Avatar name={otherName} size={38} />
+        {isBroadcast
+          ? <BroadcastAvatar size={38} />
+          : <Avatar name={displayName} size={38} />
+        }
         <div className="cw-header-info">
-          <span className="cw-header-name">{otherName}</span>
+          <span className="cw-header-name">{displayName}</span>
+          {isBroadcast && (
+            <span className="cw-header-sub">
+              {canSend ? 'Admin · visible to all users' : 'Read-only · posted by admins'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -98,7 +126,7 @@ export default function ChatWindow({ currentUser, conversation, messages, loadin
           </div>
         ) : messages.length === 0 ? (
           <div className="cw-no-msgs">
-            <p>No messages yet. Say hello!</p>
+            <p>{isBroadcast ? 'No broadcasts yet.' : 'No messages yet. Say hello!'}</p>
           </div>
         ) : (
           messages.map((msg, i) => {
@@ -113,6 +141,9 @@ export default function ChatWindow({ currentUser, conversation, messages, loadin
                   </div>
                 )}
                 <div className="msg-bubble-wrap">
+                  {!isMe && showAvatar && (
+                    <span className="msg-sender-name">{msg.sender_name ?? 'User'}</span>
+                  )}
                   <div className={`msg-bubble ${isMe ? 'msg-bubble--me' : 'msg-bubble--them'}`}>
                     {msg.content}
                   </div>
@@ -127,27 +158,34 @@ export default function ChatWindow({ currentUser, conversation, messages, loadin
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="cw-input-bar">
-        <textarea
-          ref={textareaRef}
-          className="cw-textarea"
-          rows={1}
-          placeholder="Message…"
-          value={draft}
-          onChange={handleInput}
-          onKeyDown={handleKeyDown}
-          disabled={sending}
-        />
-        <button
-          className={`cw-send-btn ${draft.trim() ? 'cw-send-btn--active' : ''}`}
-          onClick={handleSend}
-          disabled={!draft.trim() || sending}
-          title="Send (Enter)"
-        >
-          <PaperPlaneIcon width={16} height={16} />
-        </button>
-      </div>
+      {/* Input — hidden for non-admin in broadcast mode */}
+      {canSend ? (
+        <div className="cw-input-bar">
+          <textarea
+            ref={textareaRef}
+            className="cw-textarea"
+            rows={1}
+            placeholder={isBroadcast ? 'Send a broadcast to all users…' : 'Message…'}
+            value={draft}
+            onChange={handleInput}
+            onKeyDown={handleKeyDown}
+            disabled={sending}
+          />
+          <button
+            className={`cw-send-btn ${draft.trim() ? 'cw-send-btn--active' : ''}`}
+            onClick={handleSend}
+            disabled={!draft.trim() || sending}
+            title="Send (Enter)"
+          >
+            <PaperPlaneIcon width={16} height={16} />
+          </button>
+        </div>
+      ) : (
+        <div className="cw-readonly-bar">
+          <SpeakerLoudIcon width={14} height={14} />
+          Only admins can post broadcasts
+        </div>
+      )}
     </div>
   );
 }

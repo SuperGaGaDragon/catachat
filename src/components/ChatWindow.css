@@ -60,6 +60,14 @@
   user-select: none;
 }
 
+.cw-avatar--broadcast {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
 .cw-header-info {
   display: flex;
   flex-direction: column;
@@ -69,6 +77,33 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.cw-header-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.msg-sender-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+  padding: 0 4px;
+}
+
+.cw-readonly-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* Messages area */

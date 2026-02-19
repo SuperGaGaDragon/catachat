@@ -26,3 +26,11 @@ export interface UserLookup {
   id: string;
   username: string;
 }
+
+export interface Broadcast {
+  id: string;
+  sender_id: string;
+  sender_name: string | null;
+  content: string;
+  created_at: string;
+}

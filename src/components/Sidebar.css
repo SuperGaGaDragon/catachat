@@ -83,6 +83,29 @@
 .sidebar-list::-webkit-scrollbar-track { background: transparent; }
 .sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+/* Broadcast pinned item */
+.conv-item--broadcast {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.avatar--broadcast {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.conv-time--pinned {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .conv-item {
   display: flex;
   align-items: center;

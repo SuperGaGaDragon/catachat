@@ -10,9 +10,9 @@ function bootstrapTokenFromUrl() {
   const urlToken = params.get('token');
   if (urlToken && !getToken()) {
     saveToken(urlToken, true);
-    // Clean the token out of the URL bar (cosmetic)
-    const clean = window.location.pathname + (params.toString().replace(/token=[^&]+&?/, '').replace(/^&/, '') ? '?' + params.toString().replace(/token=[^&]+&?/, '').replace(/^&/, '') : '');
-    window.history.replaceState({}, '', clean);
+    params.delete('token');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
   }
 }
 bootstrapTokenFromUrl();
@@ -26,14 +26,9 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/*"
-          element={
-            <RequireAuth>
-              <ChatPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="/chat/:peer" element={<RequireAuth><ChatPage /></RequireAuth>} />
+        <Route path="/" element={<RequireAuth><ChatPage /></RequireAuth>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

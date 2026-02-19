@@ -8,7 +8,7 @@ interface NewChatDialogProps {
   open: boolean;
   onClose: () => void;
   onUserSearch: (username: string) => Promise<UserLookup | null>;
-  onStart: (userId: string, username: string) => void;
+  onStart: (username: string) => void;
 }
 
 export default function NewChatDialog({ open, onClose, onUserSearch, onStart }: NewChatDialogProps) {
@@ -28,8 +28,8 @@ export default function NewChatDialog({ open, onClose, onUserSearch, onStart }: 
 
   function handleStart() {
     if (!result || result === 'not-found') return;
-    onStart(result.id, result.username);
-    handleClose();
+    onStart(result.username);
+    // handleClose is called by Sidebar after navigation
   }
 
   function handleClose() {

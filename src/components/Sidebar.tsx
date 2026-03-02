@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   PlusIcon, MagnifyingGlassIcon, ExitIcon,
   ChatBubbleIcon, SpeakerLoudIcon, PersonIcon,
+  ChevronDownIcon, ChevronRightIcon, ReaderIcon,
 } from '@radix-ui/react-icons';
 import type { Conversation, CurrentUser, UserLookup, Group, Broadcast } from '../types';
 import { api } from '../api';
@@ -177,8 +178,20 @@ export default function Sidebar({
     navigate(`/group/${newGroup.id}`);
   }
 
+  // ── Classroom folder state ────────────────────────────────────────────────
+  const [classroomOpen, setClassroomOpen] = useState(true);
+
   // ── Build merged + filtered list ──────────────────────────────────────────
   const q = search.toLowerCase().trim();
+
+  // Separate classroom groups from regular groups
+  const classroomGroups = groups
+    .filter(g => g.metadata?.source === 'classroom')
+    .filter(g => !q || g.name.toLowerCase().includes(q))
+    .sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
+
+  const regularGroups = groups
+    .filter(g => g.metadata?.source !== 'classroom');
 
   const items: SidebarItem[] = [
     ...conversations
@@ -188,7 +201,7 @@ export default function Sidebar({
         conv: c,
         sortKey: c.last_message_at ?? c.created_at,
       })),
-    ...groups
+    ...regularGroups
       .filter(g => !q || g.name.toLowerCase().includes(q))
       .map(g => ({
         kind: 'group' as const,
@@ -196,6 +209,10 @@ export default function Sidebar({
         sortKey: g.last_message_at,
       })),
   ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+
+  const hasClassroomUnread = classroomGroups.some(
+    g => g.id !== activeGroupId && hasGroupUnread(g.id, g.last_message_at),
+  );
   const showBroadcastUnread = activePeer !== '__broadcast__' && hasBroadcastUnread(latestBroadcastAt);
 
   return (
@@ -259,7 +276,7 @@ export default function Sidebar({
         </div>
       </button>
 
-      {/* Merged conversation + group list */}
+      {/* Conversation + group list */}
       <div className="sidebar-list">
         {loading ? (
           <div className="sidebar-empty">
@@ -267,64 +284,112 @@ export default function Sidebar({
             <div className="list-skeleton" />
             <div className="list-skeleton" />
           </div>
-        ) : items.length === 0 ? (
-          <div className="sidebar-empty">
-            <p>{search ? 'No results' : 'No conversations yet'}</p>
-            {!search && (
-              <button className="new-chat-hint" onClick={() => setChatDialogOpen(true)}>
-                Start a conversation
-              </button>
-            )}
-          </div>
         ) : (
-          items.map(item => {
-            if (item.kind === 'conv') {
-              const { conv } = item;
-              const name = conv.other_username ?? conv.other_user_id.slice(0, 8) + '…';
-              const isActive = !!activePeer && conv.other_username === activePeer;
-              const isUnread = !isActive && hasConversationUnread(conv.id, conv.last_message_at);
-              return (
+          <>
+            {/* ── Classroom folder ──────────────────────────────────── */}
+            {classroomGroups.length > 0 && (
+              <div className="sidebar-folder">
                 <button
-                  key={`conv-${conv.id}`}
-                  className={`conv-item ${isActive ? 'conv-item--active' : ''}`}
-                  onClick={() => handleSelectConv(conv)}
+                  className="sidebar-folder-header"
+                  onClick={() => setClassroomOpen(v => !v)}
                 >
-                  <Avatar name={name} size={42} />
-                  <div className="conv-info">
-                    <span className="conv-name">{name}</span>
-                    <div className="conv-meta">
-                      <span className="conv-time">{formatTime(conv.last_message_at)}</span>
-                      {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages from ${name}`} />}
-                    </div>
-                  </div>
+                  {classroomOpen
+                    ? <ChevronDownIcon width={14} height={14} />
+                    : <ChevronRightIcon width={14} height={14} />}
+                  <ReaderIcon width={14} height={14} className="sidebar-folder-icon" />
+                  <span className="sidebar-folder-label">Classroom</span>
+                  <span className="sidebar-folder-count">{classroomGroups.length}</span>
+                  {!classroomOpen && hasClassroomUnread && (
+                    <span className="conv-unread-dot" />
+                  )}
                 </button>
-              );
-            }
 
-            // group item
-            const { group } = item;
-            const isActive = group.id === activeGroupId;
-            const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
-            return (
-              <button
-                key={`group-${group.id}`}
-                className={`conv-item ${isActive ? 'conv-item--active' : ''}`}
-                onClick={() => handleSelectGroup(group)}
-              >
-                <GroupAvatar size={42} />
-                <div className="conv-info">
-                  <div className="conv-name-row">
-                    <span className="conv-name">{group.name}</span>
-                    <span className="conv-badge-group">Group</span>
-                  </div>
-                  <div className="conv-meta">
-                    <span className="conv-time">{formatTime(group.last_message_at)}</span>
-                    {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages in ${group.name}`} />}
-                  </div>
-                </div>
-              </button>
-            );
-          })
+                {classroomOpen && classroomGroups.map(group => {
+                  const isActive = group.id === activeGroupId;
+                  const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
+                  return (
+                    <button
+                      key={`group-${group.id}`}
+                      className={`conv-item conv-item--nested ${isActive ? 'conv-item--active' : ''}`}
+                      onClick={() => handleSelectGroup(group)}
+                    >
+                      <GroupAvatar size={36} />
+                      <div className="conv-info">
+                        <div className="conv-name-row">
+                          <span className="conv-name">{group.name}</span>
+                        </div>
+                        <div className="conv-meta">
+                          <span className="conv-time">{formatTime(group.last_message_at)}</span>
+                          {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages in ${group.name}`} />}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Regular conversations + groups ───────────────────── */}
+            {items.length === 0 && classroomGroups.length === 0 ? (
+              <div className="sidebar-empty">
+                <p>{search ? 'No results' : 'No conversations yet'}</p>
+                {!search && (
+                  <button className="new-chat-hint" onClick={() => setChatDialogOpen(true)}>
+                    Start a conversation
+                  </button>
+                )}
+              </div>
+            ) : (
+              items.map(item => {
+                if (item.kind === 'conv') {
+                  const { conv } = item;
+                  const name = conv.other_username ?? conv.other_user_id.slice(0, 8) + '…';
+                  const isActive = !!activePeer && conv.other_username === activePeer;
+                  const isUnread = !isActive && hasConversationUnread(conv.id, conv.last_message_at);
+                  return (
+                    <button
+                      key={`conv-${conv.id}`}
+                      className={`conv-item ${isActive ? 'conv-item--active' : ''}`}
+                      onClick={() => handleSelectConv(conv)}
+                    >
+                      <Avatar name={name} size={42} />
+                      <div className="conv-info">
+                        <span className="conv-name">{name}</span>
+                        <div className="conv-meta">
+                          <span className="conv-time">{formatTime(conv.last_message_at)}</span>
+                          {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages from ${name}`} />}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                }
+
+                // group item
+                const { group } = item;
+                const isActive = group.id === activeGroupId;
+                const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
+                return (
+                  <button
+                    key={`group-${group.id}`}
+                    className={`conv-item ${isActive ? 'conv-item--active' : ''}`}
+                    onClick={() => handleSelectGroup(group)}
+                  >
+                    <GroupAvatar size={42} />
+                    <div className="conv-info">
+                      <div className="conv-name-row">
+                        <span className="conv-name">{group.name}</span>
+                        <span className="conv-badge-group">Group</span>
+                      </div>
+                      <div className="conv-meta">
+                        <span className="conv-time">{formatTime(group.last_message_at)}</span>
+                        {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages in ${group.name}`} />}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </>
         )}
       </div>
 

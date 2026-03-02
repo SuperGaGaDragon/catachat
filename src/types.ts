@@ -44,6 +44,12 @@ export interface GroupMember {
   joined_at: string;
 }
 
+export interface GroupMetadata {
+  source?: string;            // e.g. "classroom"
+  classroom_id?: string;
+  classroom_name?: string;
+}
+
 export interface Group {
   id: string;
   name: string;           // stored name or auto-generated from members
@@ -51,6 +57,7 @@ export interface Group {
   created_at: string;
   last_message_at: string;
   members: GroupMember[];
+  metadata?: GroupMetadata | null;
 }
 
 export interface GroupMessage {

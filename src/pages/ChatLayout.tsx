@@ -25,7 +25,7 @@ export interface ChatLayoutContext {
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
 }
 
-const CONV_REFRESH_MS = 8000;
+const CONV_REFRESH_MS = 3000;
 
 export default function ChatLayout() {
   const navigate = useNavigate();
@@ -53,6 +53,27 @@ export default function ChatLayout() {
     refreshConversations();
     const id = setInterval(refreshConversations, CONV_REFRESH_MS);
     return () => clearInterval(id);
+  }, [refreshConversations]);
+
+  useEffect(() => {
+    function refreshOnWakeup() {
+      if (document.visibilityState === 'visible') {
+        void refreshConversations();
+      }
+    }
+    function refreshOnFocus() {
+      void refreshConversations();
+    }
+
+    document.addEventListener('visibilitychange', refreshOnWakeup);
+    window.addEventListener('focus', refreshOnFocus);
+    window.addEventListener('online', refreshOnFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', refreshOnWakeup);
+      window.removeEventListener('focus', refreshOnFocus);
+      window.removeEventListener('online', refreshOnFocus);
+    };
   }, [refreshConversations]);
 
   function handleLogout() { clearToken(); navigate('/login', { replace: true }); }

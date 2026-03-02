@@ -4,6 +4,7 @@ import { api } from '../api';
 import type { Conversation, Message, UserLookup, Broadcast } from '../types';
 import ChatWindow from '../components/ChatWindow';
 import type { ChatLayoutContext } from './ChatLayout';
+import { markBroadcastSeen, markConversationSeen } from '../unread';
 import './ChatPage.css';
 
 const POLL_INTERVAL_MS = 3000;
@@ -38,6 +39,17 @@ export default function ChatPage() {
   activeConvIdRef.current = activeConvId;
   isBroadcastRef.current  = isBroadcast;
   messagesRef.current     = messages;
+
+  function touchConversation(convId: string, latestAt: string) {
+    setConversations(prev => {
+      const updated = prev.map(c =>
+        c.id === convId ? { ...c, last_message_at: latestAt } : c
+      );
+      return updated.sort((a, b) =>
+        (b.last_message_at ?? b.created_at).localeCompare(a.last_message_at ?? a.created_at)
+      );
+    });
+  }
 
   // ── Broadcast mode: load + poll ────────────────────────────────────────────
   useEffect(() => {
@@ -80,7 +92,12 @@ export default function ChatPage() {
   useEffect(() => {
     if (isBroadcast || !activeConvId) return;
     api.get<Message[]>(`/api/catchat/conversations/${activeConvId}/messages?limit=50`)
-      .then(msgs => setMessages([...msgs].reverse()))
+      .then(msgs => {
+        const ordered = [...msgs].reverse();
+        setMessages(ordered);
+        const latestAt = ordered[ordered.length - 1]?.created_at;
+        markConversationSeen(activeConvId, latestAt ?? new Date().toISOString());
+      })
       .catch(() => setMessages([]))
       .finally(() => setLoadingMsgs(false));
   }, [activeConvId, isBroadcast]);
@@ -104,19 +121,84 @@ export default function ChatPage() {
           const reversed = [...latest].reverse();
           const existingIds = new Set(messagesRef.current.map(m => m.id));
           const incoming = reversed.filter(m => !existingIds.has(m.id));
-          if (incoming.length > 0) setMessages(prev => [...prev, ...incoming]);
+          if (incoming.length > 0) {
+            setMessages(prev => [...prev, ...incoming]);
+            touchConversation(convId, incoming[incoming.length - 1].created_at);
+          }
         }
       } catch { /* silent */ }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    async function refreshNow() {
+      try {
+        if (isBroadcastRef.current) {
+          const latest = await api.get<Broadcast[]>('/api/catchat/broadcasts?limit=50');
+          const reversed = latest.map(broadcastToMessage).reverse();
+          const existingIds = new Set(messagesRef.current.map(m => m.id));
+          const incoming = reversed.filter(m => !existingIds.has(m.id));
+          if (incoming.length > 0) setMessages(prev => [...prev, ...incoming]);
+          return;
+        }
+
+        const convId = activeConvIdRef.current;
+        if (!convId) return;
+        const latest = await api.get<Message[]>(
+          `/api/catchat/conversations/${convId}/messages?limit=50`
+        );
+        const reversed = [...latest].reverse();
+        const existingIds = new Set(messagesRef.current.map(m => m.id));
+        const incoming = reversed.filter(m => !existingIds.has(m.id));
+        if (incoming.length > 0) {
+          setMessages(prev => [...prev, ...incoming]);
+          touchConversation(convId, incoming[incoming.length - 1].created_at);
+        }
+      } catch {
+        // silent
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        void refreshNow();
+      }
+    }
+    function onFocusOrOnline() {
+      void refreshNow();
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onFocusOrOnline);
+    window.addEventListener('online', onFocusOrOnline);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onFocusOrOnline);
+      window.removeEventListener('online', onFocusOrOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isBroadcast) {
+      const latestAt = messages[messages.length - 1]?.created_at;
+      markBroadcastSeen(latestAt ?? new Date().toISOString());
+      return;
+    }
+    if (!activeConvId) return;
+    const latestAt = messages[messages.length - 1]?.created_at;
+    markConversationSeen(activeConvId, latestAt ?? new Date().toISOString());
+  }, [isBroadcast, activeConvId, messages]);
+
   // ── Send ──────────────────────────────────────────────────────────────────
   async function handleSend(content: string) {
     if (!content.trim()) return;
     if (isBroadcast) {
       const b = await api.post<Broadcast>('/api/catchat/broadcasts', { content: content.trim() });
-      setMessages(prev => [...prev, broadcastToMessage(b)]);
+      const msg = broadcastToMessage(b);
+      setMessages(prev => [...prev, msg]);
+      markBroadcastSeen(msg.created_at);
       return;
     }
     if (!activeConvId) return;
@@ -125,14 +207,8 @@ export default function ChatPage() {
       { content: content.trim() }
     );
     setMessages(prev => [...prev, msg]);
-    setConversations(prev => {
-      const updated = prev.map(c =>
-        c.id === activeConvId ? { ...c, last_message_at: msg.created_at } : c
-      );
-      return updated.sort((a, b) =>
-        (b.last_message_at ?? b.created_at).localeCompare(a.last_message_at ?? a.created_at)
-      );
-    });
+    touchConversation(activeConvId, msg.created_at);
+    markConversationSeen(activeConvId, msg.created_at);
   }
 
   const isAdmin    = currentUser?.role === 'admin';

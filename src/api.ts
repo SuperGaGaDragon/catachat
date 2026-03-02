@@ -1,6 +1,11 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://api.catachess.com';
 const TOKEN_KEY = 'catachess_token';
 
+function withCacheBust(endpoint: string): string {
+  const sep = endpoint.includes('?') ? '&' : '?';
+  return `${endpoint}${sep}_ts=${Date.now()}`;
+}
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
@@ -23,13 +28,20 @@ export function saveToken(token: string, remember: boolean): void {
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
+  const method = (options.method ?? 'GET').toUpperCase();
+  const shouldBypassCache = method === 'GET';
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string> ?? {}),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  const finalEndpoint = shouldBypassCache ? withCacheBust(endpoint) : endpoint;
+  const res = await fetch(`${API_BASE}${finalEndpoint}`, {
+    ...options,
+    headers,
+    cache: shouldBypassCache ? 'no-store' : options.cache,
+  });
 
   if (res.status === 401) {
     clearToken();

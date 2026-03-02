@@ -4,8 +4,14 @@ import {
   PlusIcon, MagnifyingGlassIcon, ExitIcon,
   ChatBubbleIcon, SpeakerLoudIcon, PersonIcon,
 } from '@radix-ui/react-icons';
-import type { Conversation, CurrentUser, UserLookup, Group } from '../types';
+import type { Conversation, CurrentUser, UserLookup, Group, Broadcast } from '../types';
 import { api } from '../api';
+import {
+  UNREAD_UPDATED_EVENT,
+  hasBroadcastUnread,
+  hasConversationUnread,
+  hasGroupUnread,
+} from '../unread';
 import NewChatDialog from './NewChatDialog';
 import CreateGroupDialog from './CreateGroupDialog';
 import './Sidebar.css';
@@ -79,6 +85,7 @@ export default function Sidebar({
   const [chatDialogOpen, setChatDialogOpen]   = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [plusMenuOpen, setPlusMenuOpen]       = useState(false);
+  const [, setUnreadTick]                     = useState(0);
   const plusBtnRef                            = useRef<HTMLDivElement>(null);
 
   // Close + menu when clicking outside
@@ -96,6 +103,8 @@ export default function Sidebar({
   // Groups: fetched internally by Sidebar so both ChatPage and GroupPage share them
   const [groups, setGroups]           = useState<Group[]>([]);
   const groupsIntervalRef             = useRef<ReturnType<typeof setInterval> | null>(null);
+  const broadcastIntervalRef          = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [latestBroadcastAt, setLatestBroadcastAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -104,11 +113,38 @@ export default function Sidebar({
         .then(setGroups)
         .catch(() => {});
     fetchGroups();
-    groupsIntervalRef.current = setInterval(fetchGroups, 8000);
+    groupsIntervalRef.current = setInterval(fetchGroups, 3000);
     return () => {
       if (groupsIntervalRef.current) clearInterval(groupsIntervalRef.current);
     };
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchLatestBroadcast = () =>
+      api.get<Broadcast[]>('/api/catchat/broadcasts?limit=1')
+        .then(rows => setLatestBroadcastAt(rows[0]?.created_at ?? null))
+        .catch(() => {});
+    fetchLatestBroadcast();
+    broadcastIntervalRef.current = setInterval(fetchLatestBroadcast, 3000);
+    return () => {
+      if (broadcastIntervalRef.current) clearInterval(broadcastIntervalRef.current);
+    };
+  }, [currentUser]);
+
+  // Re-render immediately when read-state changes (same-tab + cross-tab).
+  useEffect(() => {
+    const bump = () => setUnreadTick(v => v + 1);
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === 'catachat_seen_channels_v1') bump();
+    };
+    window.addEventListener(UNREAD_UPDATED_EVENT, bump);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(UNREAD_UPDATED_EVENT, bump);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   // ── Default user-search if parent didn't provide one ──────────────────────
   async function defaultUserSearch(username: string): Promise<UserLookup | null> {
@@ -160,6 +196,7 @@ export default function Sidebar({
         sortKey: g.last_message_at,
       })),
   ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+  const showBroadcastUnread = activePeer !== '__broadcast__' && hasBroadcastUnread(latestBroadcastAt);
 
   return (
     <aside className="sidebar">
@@ -215,7 +252,10 @@ export default function Sidebar({
         </div>
         <div className="conv-info">
           <span className="conv-name">Broadcast</span>
-          <span className="conv-time conv-time--pinned">Pinned</span>
+          <div className="conv-meta">
+            <span className="conv-time conv-time--pinned">Pinned</span>
+            {showBroadcastUnread && <span className="conv-unread-dot" aria-label="Unread broadcast" />}
+          </div>
         </div>
       </button>
 
@@ -242,6 +282,7 @@ export default function Sidebar({
               const { conv } = item;
               const name = conv.other_username ?? conv.other_user_id.slice(0, 8) + '…';
               const isActive = !!activePeer && conv.other_username === activePeer;
+              const isUnread = !isActive && hasConversationUnread(conv.id, conv.last_message_at);
               return (
                 <button
                   key={`conv-${conv.id}`}
@@ -251,7 +292,10 @@ export default function Sidebar({
                   <Avatar name={name} size={42} />
                   <div className="conv-info">
                     <span className="conv-name">{name}</span>
-                    <span className="conv-time">{formatTime(conv.last_message_at)}</span>
+                    <div className="conv-meta">
+                      <span className="conv-time">{formatTime(conv.last_message_at)}</span>
+                      {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages from ${name}`} />}
+                    </div>
                   </div>
                 </button>
               );
@@ -260,6 +304,7 @@ export default function Sidebar({
             // group item
             const { group } = item;
             const isActive = group.id === activeGroupId;
+            const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
             return (
               <button
                 key={`group-${group.id}`}
@@ -272,7 +317,10 @@ export default function Sidebar({
                     <span className="conv-name">{group.name}</span>
                     <span className="conv-badge-group">Group</span>
                   </div>
-                  <span className="conv-time">{formatTime(group.last_message_at)}</span>
+                  <div className="conv-meta">
+                    <span className="conv-time">{formatTime(group.last_message_at)}</span>
+                    {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages in ${group.name}`} />}
+                  </div>
                 </div>
               </button>
             );

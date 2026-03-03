@@ -193,18 +193,26 @@ export default function Sidebar({
     navigate(`/group/${newGroup.id}`);
   }
 
-  // ── Classroom folder state ────────────────────────────────────────────────
-  const [classroomOpen, setClassroomOpen] = useState(true);
+  // ── Folder collapse state ─────────────────────────────────────────────────
+  const [classroomsOpen, setClassroomsOpen] = useState(true);
+  const [studentsOpen, setStudentsOpen]     = useState(true);
 
   // ── Build merged + filtered list ──────────────────────────────────────────
   const q = search.toLowerCase().trim();
 
-  // Separate groups by source type
-  const classroomGroups = groups
-    .filter(g => g.meta?.source === 'classroom' || g.meta?.source === 'class_group')
+  // 班级大群 (class_group)
+  const classGroups = groups
+    .filter(g => g.meta?.source === 'class_group')
     .filter(g => !q || g.name.toLowerCase().includes(q))
     .sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
 
+  // 师生小群 (classroom contact)
+  const contactGroups = groups
+    .filter(g => g.meta?.source === 'classroom')
+    .filter(g => !q || g.name.toLowerCase().includes(q))
+    .sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
+
+  // Everything else
   const regularGroups = groups
     .filter(g => !g.meta?.source || (g.meta.source !== 'classroom' && g.meta.source !== 'class_group'));
 
@@ -225,7 +233,10 @@ export default function Sidebar({
       })),
   ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
 
-  const hasClassroomUnread = classroomGroups.some(
+  const hasClassroomsUnread = classGroups.some(
+    g => g.id !== activeGroupId && hasGroupUnread(g.id, g.last_message_at),
+  );
+  const hasStudentsUnread = contactGroups.some(
     g => g.id !== activeGroupId && hasGroupUnread(g.id, g.last_message_at),
   );
   const showBroadcastUnread = activePeer !== '__broadcast__' && hasBroadcastUnread(latestBroadcastAt);
@@ -301,42 +312,77 @@ export default function Sidebar({
           </div>
         ) : (
           <>
-            {/* ── Classroom folder ──────────────────────────────────── */}
-            {classroomGroups.length > 0 && (
+            {/* ── Classrooms folder (班级大群) ──────────────────────── */}
+            {classGroups.length > 0 && (
               <div className="sidebar-folder">
                 <button
                   className="sidebar-folder-header"
-                  onClick={() => setClassroomOpen(v => !v)}
+                  onClick={() => setClassroomsOpen(v => !v)}
                 >
-                  {classroomOpen
+                  {classroomsOpen
                     ? <ChevronDownIcon width={14} height={14} />
                     : <ChevronRightIcon width={14} height={14} />}
-                  <ReaderIcon width={14} height={14} className="sidebar-folder-icon" />
-                  <span className="sidebar-folder-label">Classroom</span>
-                  <span className="sidebar-folder-count">{classroomGroups.length}</span>
-                  {!classroomOpen && hasClassroomUnread && (
+                  <ReaderIcon width={14} height={14} className="sidebar-folder-icon sidebar-folder-icon--class" />
+                  <span className="sidebar-folder-label">Classrooms</span>
+                  <span className="sidebar-folder-count sidebar-folder-count--class">{classGroups.length}</span>
+                  {!classroomsOpen && hasClassroomsUnread && (
                     <span className="conv-unread-dot" />
                   )}
                 </button>
 
-                {classroomOpen && classroomGroups.map(group => {
+                {classroomsOpen && classGroups.map(group => {
                   const isActive = group.id === activeGroupId;
                   const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
-                  const kind = groupKind(group);
                   return (
                     <button
                       key={`group-${group.id}`}
                       className={`conv-item conv-item--nested ${isActive ? 'conv-item--active' : ''}`}
                       onClick={() => handleSelectGroup(group)}
                     >
-                      <GroupAvatar size={36} kind={kind} />
+                      <GroupAvatar size={36} kind="class_group" />
                       <div className="conv-info">
-                        <div className="conv-name-row">
-                          <span className="conv-name">{group.name}</span>
-                          <span className={`conv-badge-group ${kind === 'class_group' ? 'conv-badge--class' : kind === 'classroom' ? 'conv-badge--contact' : ''}`}>
-                            {kind === 'class_group' ? 'Class' : 'Contact'}
-                          </span>
+                        <span className="conv-name">{group.name}</span>
+                        <div className="conv-meta">
+                          <span className="conv-time">{formatTime(group.last_message_at)}</span>
+                          {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages in ${group.name}`} />}
                         </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Students folder (师生小群) ────────────────────────── */}
+            {contactGroups.length > 0 && (
+              <div className="sidebar-folder">
+                <button
+                  className="sidebar-folder-header"
+                  onClick={() => setStudentsOpen(v => !v)}
+                >
+                  {studentsOpen
+                    ? <ChevronDownIcon width={14} height={14} />
+                    : <ChevronRightIcon width={14} height={14} />}
+                  <PersonIcon width={14} height={14} className="sidebar-folder-icon sidebar-folder-icon--contact" />
+                  <span className="sidebar-folder-label">Students</span>
+                  <span className="sidebar-folder-count sidebar-folder-count--contact">{contactGroups.length}</span>
+                  {!studentsOpen && hasStudentsUnread && (
+                    <span className="conv-unread-dot" />
+                  )}
+                </button>
+
+                {studentsOpen && contactGroups.map(group => {
+                  const isActive = group.id === activeGroupId;
+                  const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
+                  return (
+                    <button
+                      key={`group-${group.id}`}
+                      className={`conv-item conv-item--nested ${isActive ? 'conv-item--active' : ''}`}
+                      onClick={() => handleSelectGroup(group)}
+                    >
+                      <GroupAvatar size={36} kind="classroom" />
+                      <div className="conv-info">
+                        <span className="conv-name">{group.name}</span>
                         <div className="conv-meta">
                           <span className="conv-time">{formatTime(group.last_message_at)}</span>
                           {isUnread && <span className="conv-unread-dot" aria-label={`Unread messages in ${group.name}`} />}
@@ -349,7 +395,7 @@ export default function Sidebar({
             )}
 
             {/* ── Regular conversations + groups ───────────────────── */}
-            {items.length === 0 && classroomGroups.length === 0 ? (
+            {items.length === 0 && classGroups.length === 0 && contactGroups.length === 0 ? (
               <div className="sidebar-empty">
                 <p>{search ? 'No results' : 'No conversations yet'}</p>
                 {!search && (

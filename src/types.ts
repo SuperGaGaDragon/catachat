@@ -57,7 +57,7 @@ export interface Group {
   created_at: string;
   last_message_at: string;
   members: GroupMember[];
-  metadata?: GroupMetadata | null;
+  meta?: GroupMetadata | null;
 }
 
 export interface GroupMessage {

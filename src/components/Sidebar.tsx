@@ -186,7 +186,7 @@ export default function Sidebar({
 
   // Separate classroom groups from regular groups
   const classroomGroups = groups
-    .filter(g => g.metadata?.source === 'classroom')
+    .filter(g => g.meta?.source === 'classroom')
     .filter(g => !q || g.name.toLowerCase().includes(q))
     .sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
 

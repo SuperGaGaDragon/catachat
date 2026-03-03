@@ -49,9 +49,24 @@ function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   );
 }
 
-function GroupAvatar({ size = 40 }: { size?: number }) {
+type GroupKind = 'user' | 'class_group' | 'classroom';
+
+function groupKind(group: Group): GroupKind {
+  const src = group.meta?.source;
+  if (src === 'class_group') return 'class_group';
+  if (src === 'classroom') return 'classroom';
+  return 'user';
+}
+
+const GROUP_AVATAR_CLASS: Record<GroupKind, string> = {
+  user:        'avatar--group',          // purple — user-created
+  class_group: 'avatar--group-class',    // teal   — 班级大群
+  classroom:   'avatar--group-contact',  // rose   — 师生小群
+};
+
+function GroupAvatar({ size = 40, kind = 'user' as GroupKind }: { size?: number; kind?: GroupKind }) {
   return (
-    <div className="avatar avatar--group" style={{ width: size, height: size, fontSize: size * 0.4 }}>
+    <div className={`avatar ${GROUP_AVATAR_CLASS[kind]}`} style={{ width: size, height: size, fontSize: size * 0.4 }}>
       <PersonIcon width={size * 0.44} height={size * 0.44} />
     </div>
   );
@@ -184,14 +199,14 @@ export default function Sidebar({
   // ── Build merged + filtered list ──────────────────────────────────────────
   const q = search.toLowerCase().trim();
 
-  // Separate classroom groups from regular groups
+  // Separate groups by source type
   const classroomGroups = groups
-    .filter(g => g.meta?.source === 'classroom')
+    .filter(g => g.meta?.source === 'classroom' || g.meta?.source === 'class_group')
     .filter(g => !q || g.name.toLowerCase().includes(q))
     .sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
 
   const regularGroups = groups
-    .filter(g => g.metadata?.source !== 'classroom');
+    .filter(g => !g.meta?.source || (g.meta.source !== 'classroom' && g.meta.source !== 'class_group'));
 
   const items: SidebarItem[] = [
     ...conversations
@@ -307,16 +322,20 @@ export default function Sidebar({
                 {classroomOpen && classroomGroups.map(group => {
                   const isActive = group.id === activeGroupId;
                   const isUnread = !isActive && hasGroupUnread(group.id, group.last_message_at);
+                  const kind = groupKind(group);
                   return (
                     <button
                       key={`group-${group.id}`}
                       className={`conv-item conv-item--nested ${isActive ? 'conv-item--active' : ''}`}
                       onClick={() => handleSelectGroup(group)}
                     >
-                      <GroupAvatar size={36} />
+                      <GroupAvatar size={36} kind={kind} />
                       <div className="conv-info">
                         <div className="conv-name-row">
                           <span className="conv-name">{group.name}</span>
+                          <span className={`conv-badge-group ${kind === 'class_group' ? 'conv-badge--class' : kind === 'classroom' ? 'conv-badge--contact' : ''}`}>
+                            {kind === 'class_group' ? 'Class' : 'Contact'}
+                          </span>
                         </div>
                         <div className="conv-meta">
                           <span className="conv-time">{formatTime(group.last_message_at)}</span>
@@ -374,7 +393,7 @@ export default function Sidebar({
                     className={`conv-item ${isActive ? 'conv-item--active' : ''}`}
                     onClick={() => handleSelectGroup(group)}
                   >
-                    <GroupAvatar size={42} />
+                    <GroupAvatar size={42} kind={groupKind(group)} />
                     <div className="conv-info">
                       <div className="conv-name-row">
                         <span className="conv-name">{group.name}</span>

@@ -369,9 +369,10 @@
   padding-bottom: 7px;
 }
 
-/* Group avatar */
-.avatar--group {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+/* Group avatars — three variants by source */
+.avatar--group,
+.avatar--group-class,
+.avatar--group-contact {
   border-radius: 12px !important;  /* rounded square instead of circle */
   display: flex;
   align-items: center;
@@ -380,7 +381,22 @@
   flex-shrink: 0;
 }
 
-/* "Group" badge next to name */
+/* 1. User-created groups — purple */
+.avatar--group {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+/* 2. Class group chat (班级大群) — teal */
+.avatar--group-class {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+}
+
+/* 3. Contact teacher (师生小群) — rose */
+.avatar--group-contact {
+  background: linear-gradient(135deg, #f472b6, #e11d48);
+}
+
+/* Badge next to name */
 .conv-name-row {
   display: flex;
   align-items: center;
@@ -397,4 +413,14 @@
   color: #6366f1;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.conv-badge--class {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0d9488;
+}
+
+.conv-badge--contact {
+  background: rgba(244, 114, 182, 0.12);
+  color: #e11d48;
 }

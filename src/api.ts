@@ -18,6 +18,12 @@ export function clearToken(): void {
 }
 
 export function saveToken(token: string, remember: boolean): void {
+  // Keep a single authoritative token. Otherwise a stale localStorage value
+  // wins over a fresh sessionStorage bridge token in getToken().
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('catachess_user_id');
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem('catachess_user_id');
   if (remember) {
     localStorage.setItem(TOKEN_KEY, token);
   } else {

@@ -171,8 +171,7 @@ export default function Sidebar({
 
   // ── Navigation ────────────────────────────────────────────────────────────
   function handleSelectConv(conv: Conversation) {
-    const username = conv.other_username;
-    if (username) navigate(`/chat/${encodeURIComponent(username)}`);
+    navigate(`/conversation/${encodeURIComponent(conv.id)}`);
   }
 
   function handleSelectGroup(group: Group) {

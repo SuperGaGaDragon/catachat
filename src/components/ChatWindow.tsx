@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { PaperPlaneIcon, ChatBubbleIcon, SpeakerLoudIcon } from '@radix-ui/react-icons';
 import type { Conversation, Message, CurrentUser } from '../types';
+import MessageContent from './MessageContent';
 import './ChatWindow.css';
 
 interface ChatWindowProps {
@@ -145,7 +146,7 @@ export default function ChatWindow({
                     <span className="msg-sender-name">{msg.sender_name ?? 'User'}</span>
                   )}
                   <div className={`msg-bubble ${isMe ? 'msg-bubble--me' : 'msg-bubble--them'}`}>
-                    {msg.content}
+                    <MessageContent content={msg.content} />
                   </div>
                   <span className={`msg-time ${isMe ? 'msg-time--me' : ''}`}>
                     {formatMsgTime(msg.created_at)}

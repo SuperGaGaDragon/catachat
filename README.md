@@ -31,5 +31,9 @@ Hosted as a module of the catachess backend. Base URL: `/api/catchat`
 | POST | `/conversations` | Open or retrieve a conversation |
 | GET | `/conversations/{id}/messages` | Paginated message history |
 | POST | `/conversations/{id}/messages` | Send a message |
+
+Conversation entry points use `/conversation/:conversationId` so notification links resolve an immutable conversation directly. The legacy `/chat/:username` route remains available for starting a new conversation from user search.
+
+Trusted `https://catachess.com/...` URLs in direct messages render as explicit external actions. Message HTML is never interpreted, and other origins remain plain text.
 | GET | `/broadcasts` | List broadcasts |
 | POST | `/broadcasts` | Send broadcast (admin only) |

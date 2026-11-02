@@ -50,6 +50,7 @@ export default function App() {
           <Route path="/"              element={<ChatPage />} />
           <Route path="/broadcast"     element={<ChatPage />} />
           <Route path="/chat/:peer"    element={<ChatPage />} />
+          <Route path="/conversation/:conversationId" element={<ChatPage />} />
           <Route path="/group/:groupId" element={<GroupPage />} />
         </Route>
 

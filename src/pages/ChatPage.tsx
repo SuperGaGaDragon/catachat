@@ -23,7 +23,7 @@ function broadcastToMessage(b: Broadcast): Message {
 export default function ChatPage() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { peer }  = useParams<{ peer: string }>();
+  const { peer, conversationId } = useParams<{ peer?: string; conversationId?: string }>();
   const isBroadcast = location.pathname === '/broadcast';
 
   const { currentUser, conversations, setConversations } =
@@ -62,15 +62,24 @@ export default function ChatPage() {
       .finally(() => setLoadingMsgs(false));
   }, [isBroadcast]);
 
-  // ── Peer mode: resolve username → conversation ────────────────────────────
+  // ── Direct-message mode: exact conversation ID or legacy username route ──
   useEffect(() => {
-    if (isBroadcast || !peer) {
+    if (isBroadcast || (!peer && !conversationId)) {
       if (!isBroadcast) { setActiveConvId(null); setMessages([]); }
       return;
     }
     let cancelled = false;
     setLoadingMsgs(true);
     async function open() {
+      if (conversationId) {
+        const rows = await api.get<Conversation[]>('/api/catchat/conversations');
+        const conversation = rows.find(item => item.id === conversationId);
+        if (!conversation) throw new Error('Conversation not found');
+        if (cancelled) return;
+        setConversations(rows);
+        setActiveConvId(conversation.id);
+        return;
+      }
       const u = await api.get<UserLookup>(`/user/by-username/${encodeURIComponent(peer!)}`);
       const conv = await api.post<Conversation>('/api/catchat/conversations', { user_id: u.id });
       if (cancelled) return;
@@ -86,7 +95,7 @@ export default function ChatPage() {
     }
     open().catch(() => navigate('/', { replace: true }));
     return () => { cancelled = true; };
-  }, [peer, isBroadcast, navigate, setConversations]);
+  }, [peer, conversationId, isBroadcast, navigate, setConversations]);
 
   // ── Messages load when active conv changes ────────────────────────────────
   useEffect(() => {

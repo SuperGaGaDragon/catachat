@@ -6,6 +6,7 @@ import {
   ChevronDownIcon, ChevronRightIcon, ReaderIcon,
 } from '@radix-ui/react-icons';
 import type { Conversation, CurrentUser, UserLookup, Group, Broadcast } from '../types';
+import { visibleBroadcasts } from '../broadcastVisibility';
 import { api } from '../api';
 import {
   UNREAD_UPDATED_EVENT,
@@ -139,7 +140,7 @@ export default function Sidebar({
     if (!currentUser) return;
     const fetchLatestBroadcast = () =>
       api.get<Broadcast[]>('/api/catchat/broadcasts?limit=1')
-        .then(rows => setLatestBroadcastAt(rows[0]?.created_at ?? null))
+        .then(rows => setLatestBroadcastAt(visibleBroadcasts(rows)[0]?.created_at ?? null))
         .catch(() => {});
     fetchLatestBroadcast();
     broadcastIntervalRef.current = setInterval(fetchLatestBroadcast, 3000);

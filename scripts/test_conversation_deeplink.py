@@ -44,7 +44,22 @@ def main() -> None:
         elif path == "/api/catchat/groups":
             body = []
         elif path == "/api/catchat/broadcasts":
-            body = []
+            body = [
+                {
+                    "id": "launch-announcement",
+                    "sender_id": "system-magazine",
+                    "sender_name": "CataChess Magazine",
+                    "content": "The Steinitz CataChess Online Magazine Community will officially launch tomorrow, November 4.",
+                    "created_at": "2026-11-03T12:00:00Z",
+                },
+                {
+                    "id": "historical-announcement",
+                    "sender_id": "admin-1",
+                    "sender_name": "Admin",
+                    "content": "Historical announcement that should remain hidden in the public client.",
+                    "created_at": "2026-07-09T12:00:00Z",
+                },
+            ]
         else:
             route.fulfill(status=404, content_type="application/json", body=json.dumps({"detail": path}))
             return
@@ -64,10 +79,13 @@ def main() -> None:
         expect(page.locator('.msg-bubble a')).to_have_count(1)
         expect(page.get_by_text("https://example.com/not-a-product-action", exact=False)).to_be_visible()
         assert "/user/by-username/Editor%20One" not in requested_paths
+        page.goto(f"{BASE_URL}/broadcast", wait_until="domcontentloaded")
+        expect(page.get_by_text("The Steinitz CataChess Online Magazine Community will officially launch tomorrow, November 4.", exact=True)).to_be_visible()
+        expect(page.get_by_text("Historical announcement that should remain hidden in the public client.", exact=True)).to_have_count(0)
         page.screenshot(path=str(OUT / "conversation-deeplink.png"), full_page=True)
         browser.close()
 
-    print("PASS exact conversation deep link and trusted Magazine action")
+    print("PASS exact conversation deep link, trusted Magazine action, and broadcast cutoff")
 
 
 if __name__ == "__main__":

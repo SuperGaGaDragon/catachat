@@ -35,5 +35,7 @@ Hosted as a module of the catachess backend. Base URL: `/api/catchat`
 Conversation entry points use `/conversation/:conversationId` so notification links resolve an immutable conversation directly. The legacy `/chat/:username` route remains available for starting a new conversation from user search.
 
 Trusted `https://catachess.com/...` URLs in direct messages render as explicit external actions. Message HTML is never interpreted, and other origins remain plain text.
+
+Historical broadcasts remain stored for audit purposes. The public client uses `src/broadcastVisibility.ts` as the single visibility boundary and begins its current announcement timeline on 2026-11-03 UTC; broadcasts before that cutoff do not appear in the Broadcast view or unread state.
 | GET | `/broadcasts` | List broadcasts |
 | POST | `/broadcasts` | Send broadcast (admin only) |

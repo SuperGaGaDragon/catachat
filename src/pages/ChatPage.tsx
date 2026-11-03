@@ -5,6 +5,7 @@ import type { Conversation, Message, UserLookup, Broadcast } from '../types';
 import ChatWindow from '../components/ChatWindow';
 import type { ChatLayoutContext } from './ChatLayout';
 import { markBroadcastSeen, markConversationSeen } from '../unread';
+import { visibleBroadcasts } from '../broadcastVisibility';
 import './ChatPage.css';
 
 const POLL_INTERVAL_MS = 3000;
@@ -57,7 +58,7 @@ export default function ChatPage() {
     setActiveConvId(null);
     setLoadingMsgs(true);
     api.get<Broadcast[]>('/api/catchat/broadcasts?limit=50')
-      .then(bs => setMessages(bs.map(broadcastToMessage).reverse()))
+      .then(bs => setMessages(visibleBroadcasts(bs).map(broadcastToMessage).reverse()))
       .catch(() => setMessages([]))
       .finally(() => setLoadingMsgs(false));
   }, [isBroadcast]);
@@ -116,7 +117,7 @@ export default function ChatPage() {
     const id = setInterval(async () => {
       try {
         if (isBroadcastRef.current) {
-          const latest = await api.get<Broadcast[]>('/api/catchat/broadcasts?limit=50');
+          const latest = visibleBroadcasts(await api.get<Broadcast[]>('/api/catchat/broadcasts?limit=50'));
           const reversed = latest.map(broadcastToMessage).reverse();
           const existingIds = new Set(messagesRef.current.map(m => m.id));
           const incoming = reversed.filter(m => !existingIds.has(m.id));
@@ -144,7 +145,7 @@ export default function ChatPage() {
     async function refreshNow() {
       try {
         if (isBroadcastRef.current) {
-          const latest = await api.get<Broadcast[]>('/api/catchat/broadcasts?limit=50');
+          const latest = visibleBroadcasts(await api.get<Broadcast[]>('/api/catchat/broadcasts?limit=50'));
           const reversed = latest.map(broadcastToMessage).reverse();
           const existingIds = new Set(messagesRef.current.map(m => m.id));
           const incoming = reversed.filter(m => !existingIds.has(m.id));
